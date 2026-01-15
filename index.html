@@ -3,550 +3,795 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>逻辑演武场 - AI 逻辑口才特训</title>
+    <title>AI 逻辑口才特训</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* 黑金极简风格 */
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #1a1a1a;
+            --gold: #d4af37;
+            --gold-light: #f4d03f;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
         }
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .view-hidden {
-            display: none;
+
+        /* Toast 通知样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--bg-card);
+            border: 1px solid var(--gold);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
         }
-        .pulse-ring {
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* 声波动画 */
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        .recording-pulse {
+            position: relative;
+        }
+
+        .recording-pulse::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--accent-green);
+            transform: translate(-50%, -50%);
             animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        @keyframes pulse-ring {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.1); }
+
+        /* 抽奖滚动动画 */
+        @keyframes scroll {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100%); }
+        }
+
+        .lottery-container {
+            overflow: hidden;
+            height: 60px;
+            position: relative;
+        }
+
+        .lottery-item {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-card);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            transition: width 0.3s ease;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--gold);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: var(--bg-dark);
+            font-weight: 600;
+            padding: 12px 32px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--gold);
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        /* 导航高亮 */
+        .nav-item.active {
+            color: var(--gold);
+            border-bottom: 2px solid var(--gold);
+        }
+
+        /* Markdown 内容样式 */
+        .markdown-content {
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            color: var(--gold);
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1em;
+        }
+
+        .markdown-content code {
+            background: rgba(212, 175, 55, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .markdown-content pre {
+            background: var(--bg-dark);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        /* 雷达图容器 */
+        .radar-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        /* 隐藏视图 */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* 加载动画 */
+        .spinner {
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-top: 2px solid var(--gold);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-slate-900 text-gray-100 min-h-screen">
+<body>
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+
     <!-- 全局导航栏 -->
-    <nav class="fixed top-0 left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-b border-amber-500/20 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-bold bg-gradient-to-r from-amber-400 to-emerald-400 bg-clip-text text-transparent">
-                        逻辑演武场
-                    </h1>
-                </div>
-                <div class="flex space-x-4">
-                    <button onclick="showView('home')" class="nav-btn px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">
-                        首页
-                    </button>
-                    <button onclick="showView('history')" class="nav-btn px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">
-                        历史记录
-                    </button>
-                    <button onclick="showView('settings')" class="nav-btn px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">
-                        设置
-                    </button>
-                </div>
+    <nav class="border-b border-gold/20 bg-[#1a1a1a] sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-[#d4af37]">
+                <i class="fas fa-brain mr-2"></i>AI 逻辑口才特训
+            </div>
+            <div class="flex gap-6">
+                <a href="#" class="nav-item active" data-view="home">
+                    <i class="fas fa-home mr-1"></i>首页
+                </a>
+                <a href="#" class="nav-item" data-view="history">
+                    <i class="fas fa-history mr-1"></i>历史
+                </a>
+                <a href="#" class="nav-item" data-view="settings">
+                    <i class="fas fa-cog mr-1"></i>设置
+                </a>
             </div>
         </div>
     </nav>
 
-    <!-- 主内容区 -->
-    <main class="pt-16 pb-8">
-        <!-- HomeView: 首页 -->
-        <div id="home-view" class="view fade-in">
-            <div class="max-w-4xl mx-auto px-4 py-12">
-                <div class="text-center mb-12">
-                    <h2 class="text-5xl font-bold mb-4 bg-gradient-to-r from-amber-400 to-emerald-400 bg-clip-text text-transparent">
-                        逻辑口才特训
-                    </h2>
-                    <p class="text-gray-400 text-lg">提升你的逻辑思维与表达能力</p>
+    <!-- HomeView (首页) -->
+    <div id="homeView" class="view active">
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- 用户段位卡片 -->
+            <div class="card mb-8">
+                <h2 class="text-xl font-bold text-[#d4af37] mb-4">
+                    <i class="fas fa-trophy mr-2"></i>我的段位
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-400 mb-1">当前段位</div>
+                        <div id="userRank" class="text-3xl font-bold text-[#d4af37]">逻辑萌新</div>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-400 mb-1">累计练习</div>
+                        <div id="practiceCount" class="text-3xl font-bold text-white">0 次</div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- 开始训练按钮 -->
+            <div class="text-center">
+                <button id="startTrainingBtn" class="btn-primary text-xl px-16 py-6">
+                    <i class="fas fa-play mr-2"></i>开始训练
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SettingsView (设置) -->
+    <div id="settingsView" class="view">
+        <div class="container mx-auto px-4 py-8 max-w-2xl">
+            <button id="backFromSettings" class="btn-secondary mb-6">
+                <i class="fas fa-arrow-left mr-2"></i>返回
+            </button>
+            <div class="card">
+                <h2 class="text-2xl font-bold text-[#d4af37] mb-6">
+                    <i class="fas fa-cog mr-2"></i>设置
+                </h2>
                 
-                <div class="bg-slate-800/50 rounded-xl p-8 mb-8 border border-amber-500/20">
-                    <h3 class="text-xl font-semibold mb-4 text-amber-400">今日统计</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20">
-                            <div class="text-3xl font-bold text-emerald-400" id="today-count">0</div>
-                            <div class="text-gray-400 text-sm">今日练习次数</div>
-                        </div>
-                        <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20">
-                            <div class="text-3xl font-bold text-emerald-400" id="today-time">0</div>
-                            <div class="text-gray-400 text-sm">今日练习时长(分钟)</div>
-                        </div>
-                        <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20">
-                            <div class="text-3xl font-bold text-emerald-400" id="avg-score">-</div>
-                            <div class="text-gray-400 text-sm">平均得分</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-center">
-                    <button onclick="startTraining()" class="bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-bold py-6 px-12 rounded-xl text-xl transition-all transform hover:scale-105 shadow-lg shadow-amber-500/50">
-                        开始训练
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- SettingsView: 设置 -->
-        <div id="settings-view" class="view view-hidden">
-            <div class="max-w-2xl mx-auto px-4 py-12">
-                <h2 class="text-3xl font-bold mb-8 text-center text-amber-400">设置</h2>
-                <div class="bg-slate-800/50 rounded-xl p-8 border border-amber-500/20">
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">
-                            DeepSeek API Key
-                        </label>
-                        <input 
-                            type="password" 
-                            id="api-key-input" 
-                            placeholder="请输入你的 DeepSeek API Key"
-                            class="w-full bg-slate-900 border border-amber-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                        />
-                        <p class="text-xs text-gray-400 mt-2">
-                            你的 API Key 将安全存储在本地浏览器中
-                        </p>
-                    </div>
-                    <button 
-                        onclick="saveApiKey()" 
-                        class="w-full bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all"
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2">DeepSeek API Key</label>
+                    <input 
+                        type="password" 
+                        id="apiKeyInput" 
+                        class="w-full bg-[#0a0a0a] border border-[#d4af37]/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#d4af37]"
+                        placeholder="请输入您的 DeepSeek API Key"
                     >
-                        保存
+                    <p class="text-xs text-gray-400 mt-2">您的 API Key 将安全存储在本地浏览器中</p>
+                </div>
+
+                <button id="clearHistoryBtn" class="btn-secondary bg-red-900/20 border-red-500 text-red-400 hover:bg-red-900/30">
+                    <i class="fas fa-trash mr-2"></i>清除所有历史记录
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HistoryView (历史) -->
+    <div id="historyView" class="view">
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <h2 class="text-2xl font-bold text-[#d4af37] mb-6">
+                <i class="fas fa-history mr-2"></i>历史记录
+            </h2>
+            <div id="historyList" class="space-y-4">
+                <!-- 历史记录卡片将动态插入这里 -->
+            </div>
+            <div id="emptyHistory" class="text-center text-gray-400 py-12">
+                <i class="fas fa-inbox text-4xl mb-4"></i>
+                <p>暂无历史记录</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TrainingFlow (训练流) -->
+    <div id="trainingFlow" class="view">
+        <!-- 进度条 -->
+        <div class="bg-[#1a1a1a] border-b border-gold/20 py-4">
+            <div class="container mx-auto px-4">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 25%;"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-sm text-gray-400">
+                    <span>选题</span>
+                    <span>策略选择</span>
+                    <span>演练</span>
+                    <span>智能测评</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: 选题 -->
+        <div id="step1" class="training-step active">
+            <div class="container mx-auto px-4 py-8 max-w-3xl">
+                <h2 class="text-2xl font-bold text-[#d4af37] mb-6">选择题目</h2>
+                
+                <div class="mb-6">
+                    <button id="randomTopicBtn" class="btn-primary mb-4 w-full">
+                        <i class="fas fa-dice mr-2"></i>随机抽题
                     </button>
-                    <div id="settings-message" class="mt-4"></div>
+                    <div id="lotteryContainer" class="lottery-container hidden mb-4">
+                        <div id="lotteryItems"></div>
+                    </div>
+                    <div id="selectedTopic" class="card hidden">
+                        <p class="text-lg" id="topicText"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2">或自定义题目</label>
+                    <textarea 
+                        id="customTopicInput" 
+                        class="w-full bg-[#0a0a0a] border border-[#d4af37]/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#d4af37] h-32"
+                        placeholder="请输入您想要练习的题目..."
+                    ></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="nextToStep2" class="btn-primary flex-1" disabled>
+                        下一步 <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- HistoryView: 历史记录 -->
-        <div id="history-view" class="view view-hidden">
-            <div class="max-w-4xl mx-auto px-4 py-12">
-                <h2 class="text-3xl font-bold mb-8 text-center text-amber-400">历史记录</h2>
-                <div id="history-list" class="space-y-4">
-                    <!-- 历史记录将通过 JavaScript 动态生成 -->
+        <!-- Step 2: 策略选择 -->
+        <div id="step2" class="training-step">
+            <div class="container mx-auto px-4 py-8 max-w-3xl">
+                <button id="backToStep1" class="btn-secondary mb-6">
+                    <i class="fas fa-arrow-left mr-2"></i>上一步
+                </button>
+                
+                <div class="card mb-6">
+                    <h3 class="text-lg font-bold text-[#d4af37] mb-2">题目</h3>
+                    <p id="step2Topic" class="text-white"></p>
                 </div>
+
+                <div class="mb-4 flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-[#d4af37]">选择策略</h3>
+                    <button id="refreshStrategiesBtn" class="btn-secondary text-sm">
+                        <i class="fas fa-sync-alt mr-2"></i>换一批策略
+                    </button>
+                </div>
+
+                <div id="strategiesContainer" class="space-y-4 mb-6">
+                    <!-- 策略卡片将动态插入这里 -->
+                </div>
+
+                <button id="nextToStep3" class="btn-primary w-full" disabled>
+                    下一步 <i class="fas fa-arrow-right ml-2"></i>
+                </button>
             </div>
         </div>
 
-        <!-- TrainingFlow: 训练流 -->
-        <div id="training-view" class="view view-hidden">
-            <div class="max-w-4xl mx-auto px-4 py-8">
-                <!-- 进度条 -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex-1 flex items-center">
-                            <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                                <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-300" style="width: 25%"></div>
-                            </div>
+        <!-- Step 3: 演练 -->
+        <div id="step3" class="training-step">
+            <div class="container mx-auto px-4 py-8 max-w-3xl">
+                <button id="backToStep2" class="btn-secondary mb-6">
+                    <i class="fas fa-arrow-left mr-2"></i>上一步
+                </button>
+                
+                <div class="card mb-6">
+                    <h3 class="text-lg font-bold text-[#d4af37] mb-2">题目</h3>
+                    <p id="step3Topic" class="text-white mb-4"></p>
+                    <h3 class="text-lg font-bold text-[#d4af37] mb-2">策略</h3>
+                    <p id="step3Strategy" class="text-white"></p>
+                </div>
+
+                <div class="card mb-6">
+                    <h3 class="text-lg font-bold text-[#d4af37] mb-4">开始演练</h3>
+                    
+                    <div class="mb-4">
+                        <button id="recordBtn" class="btn-primary w-full mb-4">
+                            <i class="fas fa-microphone mr-2"></i>开始录音
+                        </button>
+                        <div id="recordingStatus" class="text-center text-gray-400 hidden">
+                            <i class="fas fa-circle text-red-500 mr-2"></i>正在录音...
                         </div>
                     </div>
-                    <div class="flex justify-between text-sm">
-                        <span id="step-1-label" class="text-amber-400 font-semibold">Step 1: 选题</span>
-                        <span id="step-2-label" class="text-gray-500">Step 2: 策略</span>
-                        <span id="step-3-label" class="text-gray-500">Step 3: 演练</span>
-                        <span id="step-4-label" class="text-gray-500">Step 4: 报告</span>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">语音转文字结果</label>
+                        <textarea 
+                            id="speechToText" 
+                            class="w-full bg-[#0a0a0a] border border-[#d4af37]/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#d4af37] h-32"
+                            readonly
+                            placeholder="录音结果将显示在这里..."
+                        ></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">手动修改（可选）</label>
+                        <textarea 
+                            id="manualInput" 
+                            class="w-full bg-[#0a0a0a] border border-[#d4af37]/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#d4af37] h-32"
+                            placeholder="您可以手动修改或直接输入回答..."
+                        ></textarea>
                     </div>
                 </div>
 
-                <!-- Step 1: 选题 -->
-                <div id="step-1" class="training-step fade-in">
-                    <div class="mb-4">
-                        <button onclick="showView('home')" class="text-amber-400 hover:text-amber-300 flex items-center">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            返回上一步
-                        </button>
+                <button id="submitEvaluationBtn" class="btn-primary w-full" disabled>
+                    <i class="fas fa-paper-plane mr-2"></i>提交测评
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: 智能测评 -->
+        <div id="step4" class="training-step">
+            <div class="container mx-auto px-4 py-8 max-w-4xl">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold text-[#d4af37] mb-4">测评结果</h2>
+                    
+                    <!-- 总分显示 -->
+                    <div class="text-center mb-6">
+                        <div class="text-sm text-gray-400 mb-2">总分</div>
+                        <div id="totalScore" class="text-6xl font-bold text-[#d4af37]">0</div>
                     </div>
-                    <div class="bg-slate-800/50 rounded-xl p-8 border border-amber-500/20">
-                        <h3 class="text-2xl font-bold mb-6 text-amber-400">Step 1: 选择题目</h3>
-                        <div class="mb-6">
-                            <button onclick="randomTopic()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg mb-4 transition-colors">
-                                随机抽题
-                            </button>
-                            <div id="random-topic-display" class="bg-slate-900/50 rounded-lg p-4 mb-4 border border-emerald-500/20 min-h-[60px] flex items-center">
-                                <span class="text-gray-400">点击上方按钮随机抽取题目</span>
-                            </div>
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                或自定义题目
-                            </label>
-                            <input 
-                                type="text" 
-                                id="custom-topic-input" 
-                                placeholder="输入你的自定义题目..."
-                                class="w-full bg-slate-900 border border-amber-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                            />
-                        </div>
-                        <button 
-                            onclick="goToStep2()" 
-                            class="w-full bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all"
-                        >
-                            下一步
-                        </button>
+
+                    <!-- 雷达图 -->
+                    <div class="radar-container mb-6">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+
+                    <!-- AI 点评 -->
+                    <div class="markdown-content" id="feedbackContent">
+                        <!-- Markdown 内容将渲染在这里 -->
                     </div>
                 </div>
 
-                <!-- Step 2: 策略生成 -->
-                <div id="step-2" class="training-step view-hidden">
-                    <div class="mb-4">
-                        <button onclick="goToStep1()" class="text-amber-400 hover:text-amber-300 flex items-center">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            返回上一步
-                        </button>
-                    </div>
-                    <div class="bg-slate-800/50 rounded-xl p-8 border border-amber-500/20">
-                        <h3 class="text-2xl font-bold mb-6 text-amber-400">Step 2: 选择策略</h3>
-                        <div id="strategy-loading" class="text-center py-12">
-                            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
-                            <p class="mt-4 text-gray-400">正在生成策略...</p>
-                        </div>
-                        <div id="strategy-cards" class="hidden space-y-4">
-                            <!-- 策略卡片将通过 JavaScript 动态生成 -->
-                        </div>
-                        <div id="strategy-error" class="hidden bg-red-900/30 border border-red-500/50 rounded-lg p-4 text-red-300">
-                            <p id="strategy-error-text"></p>
-                            <button onclick="generateStrategies()" class="mt-2 text-red-300 hover:text-red-200 underline">重试</button>
-                        </div>
-                        <button 
-                            id="step2-next-btn"
-                            onclick="goToStep3()" 
-                            class="hidden w-full mt-6 bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all"
-                        >
-                            下一步
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Step 3: 语音演练 -->
-                <div id="step-3" class="training-step view-hidden">
-                    <div class="mb-4">
-                        <button onclick="goToStep2FromStep3()" class="text-amber-400 hover:text-amber-300 flex items-center">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            返回上一步
-                        </button>
-                    </div>
-                    <div class="bg-slate-800/50 rounded-xl p-8 border border-amber-500/20">
-                        <h3 class="text-2xl font-bold mb-6 text-amber-400">Step 3: 语音演练</h3>
-                        <div class="mb-6 bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20">
-                            <p class="text-sm text-gray-400 mb-2">当前题目：</p>
-                            <p class="text-lg font-semibold text-emerald-400" id="step3-topic"></p>
-                            <p class="text-sm text-gray-400 mt-3 mb-2">已选策略：</p>
-                            <p class="text-emerald-300" id="step3-strategy"></p>
-                        </div>
-                        <div class="text-center mb-6">
-                            <button 
-                                id="record-btn"
-                                onclick="toggleRecording()" 
-                                class="w-32 h-32 rounded-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-red-500/50 flex items-center justify-center mx-auto"
-                            >
-                                <span id="record-btn-text">开始录音</span>
-                            </button>
-                            <p id="recording-status" class="mt-4 text-gray-400"></p>
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                识别文本：
-                            </label>
-                            <div id="recognized-text" class="bg-slate-900 border border-amber-500/30 rounded-lg px-4 py-4 min-h-[120px] text-gray-300">
-                                录音文本将显示在这里...
-                            </div>
-                        </div>
-                        <div class="flex space-x-4">
-                            <button 
-                                onclick="resetRecording()" 
-                                class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                            >
-                                重新录制
-                            </button>
-                            <button 
-                                id="submit-btn"
-                                onclick="goToStep4()" 
-                                class="flex-1 bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled
-                            >
-                                提交测评
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 4: 智能测评 -->
-                <div id="step-4" class="training-step view-hidden">
-                    <div class="mb-4">
-                        <button onclick="goToStep3FromStep4()" class="text-amber-400 hover:text-amber-300 flex items-center">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            返回上一步
-                        </button>
-                    </div>
-                    <div class="bg-slate-800/50 rounded-xl p-8 border border-amber-500/20">
-                        <h3 class="text-2xl font-bold mb-6 text-amber-400">Step 4: 智能测评</h3>
-                        <div id="feedback-loading" class="text-center py-12">
-                            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
-                            <p class="mt-4 text-gray-400">正在生成测评报告...</p>
-                        </div>
-                        <div id="feedback-content" class="hidden">
-                            <!-- 评分仪表盘 -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20 text-center">
-                                    <div class="text-3xl font-bold text-emerald-400" id="score-logic">-</div>
-                                    <div class="text-sm text-gray-400 mt-1">逻辑闭环</div>
-                                    <div class="text-xs text-gray-500">(30分)</div>
-                                </div>
-                                <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20 text-center">
-                                    <div class="text-3xl font-bold text-emerald-400" id="score-strategy">-</div>
-                                    <div class="text-sm text-gray-400 mt-1">策略执行度</div>
-                                    <div class="text-xs text-gray-500">(30分)</div>
-                                </div>
-                                <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20 text-center">
-                                    <div class="text-3xl font-bold text-emerald-400" id="score-fluency">-</div>
-                                    <div class="text-sm text-gray-400 mt-1">表达流畅度</div>
-                                    <div class="text-xs text-gray-500">(20分)</div>
-                                </div>
-                                <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20 text-center">
-                                    <div class="text-3xl font-bold text-emerald-400" id="score-speed">-</div>
-                                    <div class="text-sm text-gray-400 mt-1">反应速度</div>
-                                    <div class="text-xs text-gray-500">(20分)</div>
-                                </div>
-                            </div>
-                            <div class="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/20 mb-6">
-                                <h4 class="text-lg font-semibold text-amber-400 mb-3">详细点评</h4>
-                                <div id="feedback-text" class="prose prose-invert max-w-none text-gray-300"></div>
-                            </div>
-                        </div>
-                        <div id="feedback-error" class="hidden bg-red-900/30 border border-red-500/50 rounded-lg p-4 text-red-300">
-                            <p id="feedback-error-text"></p>
-                            <button onclick="generateFeedback()" class="mt-2 text-red-300 hover:text-red-200 underline">重试</button>
-                        </div>
-                        <div class="flex space-x-4 mt-6">
-                            <button 
-                                onclick="saveAndReturn()" 
-                                class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                            >
-                                保存并返回首页
-                            </button>
-                            <button 
-                                onclick="trainAgain()" 
-                                class="flex-1 bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all"
-                            >
-                                再练一题
-                            </button>
-                        </div>
-                    </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="copyReportBtn" class="btn-secondary flex-1">
+                        <i class="fas fa-copy mr-2"></i>复制完整报告
+                    </button>
+                    <button id="saveAndReturnBtn" class="btn-primary flex-1">
+                        <i class="fas fa-save mr-2"></i>保存并返回首页
+                    </button>
+                    <button id="practiceAgainBtn" class="btn-secondary flex-1">
+                        <i class="fas fa-redo mr-2"></i>再练一题
+                    </button>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
 
     <script>
         // 全局状态
         const state = {
             currentView: 'home',
             currentStep: 1,
-            currentTopic: '',
-            selectedStrategy: '',
-            recognizedText: '',
-            trainingData: {
-                topic: '',
-                strategy: '',
-                answer: '',
-                scores: {},
-                feedback: ''
-            }
+            topic: '',
+            strategies: [],
+            selectedStrategy: null,
+            userAnswer: '',
+            evaluationResult: null,
+            radarChart: null,
+            recognition: null,
+            isRecording: false
         };
 
-        // 内置题库
-        const topicBank = [
-            "如何说服老板给你加薪？",
-            "面试时如何回答'你为什么离开上一家公司'？",
-            "如何拒绝同事的不合理请求？",
-            "如何在会议上提出不同意见而不得罪人？",
-            "如何向客户解释产品涨价？",
-            "如何说服父母支持你的职业选择？",
-            "如何在团队冲突中保持中立并化解矛盾？",
-            "如何向投资人解释项目延期？",
-            "如何说服客户接受你的方案而不是竞争对手的？",
-            "如何在谈判中争取更好的条件？",
-            "如何向领导汇报项目失败？",
-            "如何说服团队成员接受你的想法？",
-            "如何在公开场合反驳错误观点？",
-            "如何向客户解释服务中断？",
-            "如何说服朋友改变不良习惯？",
-            "如何在辩论中维护自己的立场？",
-            "如何向用户解释产品功能限制？",
-            "如何说服合作伙伴接受你的合作条件？",
-            "如何在冲突中表达自己的需求？",
-            "如何向团队解释战略调整？"
+        // 预设题目库
+        const topicPool = [
+            "人工智能是否会取代人类的工作？",
+            "网络游戏对青少年的影响是利大于弊还是弊大于利？",
+            "是否应该支持996工作制？",
+            "社交媒体是否让人们的交流更加真实？",
+            "在线教育能否完全替代传统教育？",
+            "是否应该对网络言论进行更严格的监管？",
+            "消费主义是否促进了社会进步？",
+            "是否应该取消高考？",
+            "人工智能的发展是否应该受到限制？",
+            "是否应该支持死刑？"
         ];
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            showView('home');
-            loadApiKey();
-            updateTodayStats();
+            initNavigation();
+            initSettings();
+            initTrainingFlow();
+            loadUserRank();
             loadHistory();
         });
 
-        // 视图切换
-        function showView(viewName) {
-            // 隐藏所有视图
-            document.querySelectorAll('.view').forEach(v => {
-                v.classList.add('view-hidden');
-                v.classList.remove('fade-in');
+        // 导航逻辑
+        function initNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const view = item.dataset.view;
+                    switchView(view);
+                });
             });
 
-            // 显示目标视图
-            const targetView = document.getElementById(`${viewName}-view`);
-            if (targetView) {
-                targetView.classList.remove('view-hidden');
-                targetView.classList.add('fade-in');
-                state.currentView = viewName;
-            }
-
-            // 更新导航按钮状态
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('bg-slate-800', 'text-amber-400');
+            document.getElementById('startTrainingBtn').addEventListener('click', () => {
+                switchView('training');
+                resetTrainingFlow();
             });
 
-            // 页面切换时更新相关数据
+            document.getElementById('backFromSettings').addEventListener('click', () => {
+                switchView('home');
+            });
+        }
+
+        function switchView(viewName) {
+            // 更新导航高亮
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.view === viewName);
+            });
+
+            // 切换视图
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.toggle('active', view.id === viewName + 'View' || 
+                    (viewName === 'training' && view.id === 'trainingFlow'));
+            });
+
+            state.currentView = viewName;
+
             if (viewName === 'history') {
                 loadHistory();
-            } else if (viewName === 'home') {
-                updateTodayStats();
+            } else if (viewName === 'settings') {
+                loadApiKey();
             }
         }
 
-        // 开始训练
-        function startTraining() {
-            state.currentStep = 1;
-            state.currentTopic = '';
-            state.selectedStrategy = '';
-            state.recognizedText = '';
-            state.trainingData = {
-                topic: '',
-                strategy: '',
-                answer: '',
-                scores: {},
-                feedback: ''
-            };
-            showView('training');
-            showStep(1);
-            document.getElementById('custom-topic-input').value = '';
-            document.getElementById('random-topic-display').innerHTML = '<span class="text-gray-400">点击上方按钮随机抽取题目</span>';
+        // Toast 通知
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
         }
 
-        // 显示训练步骤
-        function showStep(step) {
-            state.currentStep = step;
-            
-            // 隐藏所有步骤
-            document.querySelectorAll('.training-step').forEach(s => {
-                s.classList.add('view-hidden');
+        // 设置页面逻辑
+        function initSettings() {
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            apiKeyInput.addEventListener('change', () => {
+                localStorage.setItem('deepseek_api_key', apiKeyInput.value);
+                showToast('API Key 已保存');
             });
 
-            // 显示当前步骤
-            const stepElement = document.getElementById(`step-${step}`);
-            if (stepElement) {
-                stepElement.classList.remove('view-hidden');
-                stepElement.classList.add('fade-in');
+            document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+                if (confirm('确定要清除所有历史记录吗？此操作不可恢复！')) {
+                    localStorage.removeItem('training_history');
+                    showToast('历史记录已清除');
+                    loadUserRank();
+                    if (state.currentView === 'history') {
+                        loadHistory();
+                    }
+                }
+            });
+        }
+
+        function loadApiKey() {
+            const apiKey = localStorage.getItem('deepseek_api_key') || '';
+            document.getElementById('apiKeyInput').value = apiKey;
+        }
+
+        // 用户段位计算
+        function loadUserRank() {
+            const history = JSON.parse(localStorage.getItem('training_history') || '[]');
+            const totalScore = history.reduce((sum, item) => sum + (item.score || 0), 0);
+            const practiceCount = history.length;
+
+            let rank = '逻辑萌新';
+            if (totalScore >= 2000) {
+                rank = '哲学大师';
+            } else if (totalScore >= 500) {
+                rank = '进阶辩手';
             }
 
+            document.getElementById('userRank').textContent = rank;
+            document.getElementById('practiceCount').textContent = `${practiceCount} 次`;
+        }
+
+        // 训练流逻辑
+        function initTrainingFlow() {
+            // Step 1: 选题
+            document.getElementById('randomTopicBtn').addEventListener('click', randomTopic);
+            document.getElementById('customTopicInput').addEventListener('input', checkStep1Complete);
+            document.getElementById('nextToStep2').addEventListener('click', () => {
+                const customTopic = document.getElementById('customTopicInput').value.trim();
+                state.topic = customTopic || state.topic;
+                if (state.topic) {
+                    goToStep(2);
+                }
+            });
+
+            // Step 2: 策略选择
+            document.getElementById('backToStep1').addEventListener('click', () => goToStep(1));
+            document.getElementById('refreshStrategiesBtn').addEventListener('click', generateStrategies);
+            document.getElementById('nextToStep3').addEventListener('click', () => {
+                if (state.selectedStrategy) {
+                    goToStep(3);
+                }
+            });
+
+            // Step 3: 演练
+            document.getElementById('backToStep2').addEventListener('click', () => goToStep(2));
+            document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+            document.getElementById('speechToText').addEventListener('input', checkStep3Complete);
+            document.getElementById('manualInput').addEventListener('input', checkStep3Complete);
+            document.getElementById('submitEvaluationBtn').addEventListener('click', submitEvaluation);
+
+            // Step 4: 测评结果
+            document.getElementById('copyReportBtn').addEventListener('click', copyReport);
+            document.getElementById('saveAndReturnBtn').addEventListener('click', saveAndReturn);
+            document.getElementById('practiceAgainBtn').addEventListener('click', practiceAgain);
+        }
+
+        function resetTrainingFlow() {
+            state.currentStep = 1;
+            state.topic = '';
+            state.strategies = [];
+            state.selectedStrategy = null;
+            state.userAnswer = '';
+            state.evaluationResult = null;
+            
+            document.getElementById('customTopicInput').value = '';
+            document.getElementById('selectedTopic').classList.add('hidden');
+            document.getElementById('lotteryContainer').classList.add('hidden');
+            document.getElementById('speechToText').value = '';
+            document.getElementById('manualInput').value = '';
+            
+            goToStep(1);
+        }
+
+        function goToStep(step) {
+            state.currentStep = step;
+            
             // 更新进度条
             const progress = (step / 4) * 100;
-            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('progressFill').style.width = `${progress}%`;
 
-            // 更新步骤标签
-            for (let i = 1; i <= 4; i++) {
-                const label = document.getElementById(`step-${i}-label`);
-                if (i < step) {
-                    label.classList.add('text-emerald-400');
-                    label.classList.remove('text-gray-500', 'text-amber-400');
-                } else if (i === step) {
-                    label.classList.add('text-amber-400');
-                    label.classList.remove('text-gray-500', 'text-emerald-400');
-                } else {
-                    label.classList.add('text-gray-500');
-                    label.classList.remove('text-amber-400', 'text-emerald-400');
-                }
+            // 切换步骤视图
+            document.querySelectorAll('.training-step').forEach((el, index) => {
+                el.classList.toggle('active', index + 1 === step);
+            });
+
+            // 步骤特定逻辑
+            if (step === 2) {
+                document.getElementById('step2Topic').textContent = state.topic;
+                generateStrategies();
+            } else if (step === 3) {
+                document.getElementById('step3Topic').textContent = state.topic;
+                document.getElementById('step3Strategy').textContent = state.selectedStrategy;
             }
         }
 
-        // Step 1: 随机抽题
+        // 随机抽题（带滚动动画）
         function randomTopic() {
-            const randomIndex = Math.floor(Math.random() * topicBank.length);
-            const topic = topicBank[randomIndex];
-            state.currentTopic = topic;
-            document.getElementById('random-topic-display').innerHTML = `<span class="text-emerald-300 text-lg">${topic}</span>`;
-            document.getElementById('custom-topic-input').value = '';
-        }
+            const btn = document.getElementById('randomTopicBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 抽题中...';
 
-        // Step 1 -> Step 2
-        function goToStep2() {
-            const customTopic = document.getElementById('custom-topic-input').value.trim();
-            const topic = customTopic || state.currentTopic;
+            const container = document.getElementById('lotteryContainer');
+            const itemsDiv = document.getElementById('lotteryItems');
+            itemsDiv.innerHTML = '';
 
-            if (!topic) {
-                alert('请先选择一个题目或输入自定义题目');
-                return;
-            }
+            // 创建滚动项
+            const allTopics = [...topicPool, ...topicPool, ...topicPool];
+            allTopics.forEach(topic => {
+                const div = document.createElement('div');
+                div.className = 'lottery-item';
+                div.textContent = topic;
+                itemsDiv.appendChild(div);
+            });
 
-            // 检查 API Key
-            const apiKey = localStorage.getItem('deepseek_key');
-            if (!apiKey) {
-                if (confirm('请先设置 DeepSeek API Key。是否前往设置页面？')) {
-                    showView('settings');
-                    return;
+            container.classList.remove('hidden');
+
+            // 滚动动画
+            let scrollPosition = 0;
+            const scrollSpeed = 50;
+            const targetPosition = topicPool.length * 60; // 滚动到第一个池子的末尾
+
+            const scrollInterval = setInterval(() => {
+                scrollPosition += scrollSpeed;
+                itemsDiv.style.transform = `translateY(-${scrollPosition}px)`;
+                
+                if (scrollPosition >= targetPosition) {
+                    clearInterval(scrollInterval);
+                    // 随机选择一个题目
+                    const randomIndex = Math.floor(Math.random() * topicPool.length);
+                    state.topic = topicPool[randomIndex];
+                    
+                    // 显示选中的题目
+                    document.getElementById('topicText').textContent = state.topic;
+                    document.getElementById('selectedTopic').classList.remove('hidden');
+                    container.classList.add('hidden');
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-dice mr-2"></i>随机抽题';
+                    checkStep1Complete();
                 }
-                return;
-            }
-
-            state.currentTopic = topic;
-            state.trainingData.topic = topic;
-            showStep(2);
-            generateStrategies();
+            }, 50);
         }
 
-        // Step 2: 生成策略
+        function checkStep1Complete() {
+            const customTopic = document.getElementById('customTopicInput').value.trim();
+            const hasTopic = state.topic || customTopic;
+            document.getElementById('nextToStep2').disabled = !hasTopic;
+        }
+
+        // 生成策略
         async function generateStrategies() {
-            const apiKey = localStorage.getItem('deepseek_key');
+            const btn = document.getElementById('refreshStrategiesBtn');
+            const nextBtn = document.getElementById('nextToStep3');
+            btn.disabled = true;
+            nextBtn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 生成中...';
+
+            const apiKey = localStorage.getItem('deepseek_api_key');
             if (!apiKey) {
-                showStrategyError('请先设置 API Key');
+                showToast('请先在设置中配置 API Key');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>换一批策略';
                 return;
             }
 
-            // 显示加载状态
-            document.getElementById('strategy-loading').classList.remove('hidden');
-            document.getElementById('strategy-cards').classList.add('hidden');
-            document.getElementById('strategy-error').classList.add('hidden');
-            document.getElementById('step2-next-btn').classList.add('hidden');
+            try {
+                const prompt = `请为以下辩论题目生成3个不同角度的简短策略（每个策略不超过50字）：
 
-            const prompt = `你是一位逻辑口才训练专家。针对以下题目，请生成3个截然不同的逻辑切入点策略，每个策略应该：
-1. 有明确的逻辑框架
-2. 有独特的切入角度（如：情感共鸣、利益交换、降维打击、数据支撑、类比论证等）
-3. 简洁有力，适合口语表达
-
-题目：${state.currentTopic}
+题目：${state.topic}
 
 请以JSON格式返回，格式如下：
 {
   "strategies": [
-    {
-      "name": "策略名称",
-      "description": "策略描述（50字以内）",
-      "approach": "具体执行方法（100字以内）"
-    }
+    "策略1",
+    "策略2", 
+    "策略3"
   ]
 }`;
 
-            try {
                 const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -563,158 +808,112 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 请求失败: ${response.status}`);
+                    throw new Error('API 请求失败');
                 }
 
                 const data = await response.json();
                 const content = data.choices[0].message.content;
                 
-                // 解析 JSON（可能包含 markdown 代码块）
+                // 尝试解析JSON（可能包含markdown代码块）
                 let jsonStr = content.trim();
                 if (jsonStr.includes('```')) {
-                    jsonStr = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/)?.[1] || jsonStr;
+                    const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                    if (match) {
+                        jsonStr = match[1];
+                    }
                 }
-                const strategiesData = JSON.parse(jsonStr);
+                
+                const result = JSON.parse(jsonStr);
+                state.strategies = result.strategies || [];
 
-                // 显示策略卡片
-                displayStrategies(strategiesData.strategies);
+                renderStrategies();
             } catch (error) {
                 console.error('生成策略失败:', error);
-                showStrategyError(`生成策略失败: ${error.message}`);
+                showToast('生成策略失败，请检查 API Key 或网络连接');
+                // 使用默认策略
+                state.strategies = [
+                    "从逻辑角度分析问题的核心矛盾",
+                    "运用类比和实例增强说服力",
+                    "构建完整的论证链条，确保逻辑闭环"
+                ];
+                renderStrategies();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>换一批策略';
             }
         }
 
-        function displayStrategies(strategies) {
-            document.getElementById('strategy-loading').classList.add('hidden');
-            const cardsContainer = document.getElementById('strategy-cards');
-            cardsContainer.classList.remove('hidden');
-            cardsContainer.innerHTML = '';
+        function renderStrategies() {
+            const container = document.getElementById('strategiesContainer');
+            container.innerHTML = '';
 
-            strategies.forEach((strategy, index) => {
+            state.strategies.forEach((strategy, index) => {
                 const card = document.createElement('div');
-                card.className = 'bg-slate-900/50 rounded-lg p-6 border border-amber-500/30 cursor-pointer hover:border-emerald-500 transition-all strategy-card';
+                card.className = 'card cursor-pointer strategy-card';
                 card.dataset.index = index;
-                card.onclick = () => selectStrategy(index, strategy);
-                
                 card.innerHTML = `
-                    <h4 class="text-xl font-semibold text-amber-400 mb-2">${strategy.name}</h4>
-                    <p class="text-gray-300 mb-3">${strategy.description}</p>
-                    <p class="text-sm text-gray-400">${strategy.approach}</p>
+                    <div class="flex items-start">
+                        <div class="flex-1">
+                            <div class="font-bold text-[#d4af37] mb-2">策略 ${index + 1}</div>
+                            <p class="text-white">${strategy}</p>
+                        </div>
+                        <i class="fas fa-check-circle text-[#d4af37] hidden check-icon ml-4"></i>
+                    </div>
                 `;
                 
-                cardsContainer.appendChild(card);
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.strategy-card').forEach(c => {
+                        c.classList.remove('border-[#d4af37]');
+                        c.querySelector('.check-icon').classList.add('hidden');
+                    });
+                    card.classList.add('border-[#d4af37]');
+                    card.querySelector('.check-icon').classList.remove('hidden');
+                    state.selectedStrategy = strategy;
+                    document.getElementById('nextToStep3').disabled = false;
+                });
+
+                container.appendChild(card);
             });
         }
 
-        function selectStrategy(index, strategy) {
-            // 移除所有选中状态
-            document.querySelectorAll('.strategy-card').forEach(card => {
-                card.classList.remove('border-emerald-500', 'bg-emerald-900/20');
-                card.classList.add('border-amber-500/30');
-            });
-
-            // 选中当前卡片
-            const selectedCard = document.querySelector(`.strategy-card[data-index="${index}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('border-emerald-500', 'bg-emerald-900/20');
-                selectedCard.classList.remove('border-amber-500/30');
-            }
-
-            state.selectedStrategy = `${strategy.name}: ${strategy.description}`;
-            state.trainingData.strategy = state.selectedStrategy;
-            document.getElementById('step2-next-btn').classList.remove('hidden');
-        }
-
-        function showStrategyError(message) {
-            document.getElementById('strategy-loading').classList.add('hidden');
-            document.getElementById('strategy-cards').classList.add('hidden');
-            document.getElementById('strategy-error').classList.remove('hidden');
-            document.getElementById('strategy-error-text').textContent = message;
-        }
-
-        // Step 2 -> Step 1
-        function goToStep1() {
-            showStep(1);
-        }
-
-        // Step 2 -> Step 3
-        function goToStep3() {
-            if (!state.selectedStrategy) {
-                alert('请先选择一个策略');
-                return;
-            }
-            showStep(3);
-            document.getElementById('step3-topic').textContent = state.currentTopic;
-            document.getElementById('step3-strategy').textContent = state.selectedStrategy;
-            document.getElementById('recognized-text').textContent = '录音文本将显示在这里...';
-            state.recognizedText = '';
-            document.getElementById('submit-btn').disabled = true;
-            document.getElementById('record-btn-text').textContent = '开始录音';
-            document.getElementById('recording-status').textContent = '';
-        }
-
-        // Step 3: 语音识别
-        let recognition = null;
-        let isRecording = false;
-
+        // 语音识别
         function initSpeechRecognition() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.lang = 'zh-CN';
-                recognition.continuous = true;
-                recognition.interimResults = true;
+                state.recognition = new SpeechRecognition();
+                state.recognition.lang = 'zh-CN';
+                state.recognition.continuous = false;
+                state.recognition.interimResults = true;
 
-                recognition.onresult = (event) => {
-                    let interimTranscript = '';
-                    let finalTranscript = state.recognizedText;
-
+                state.recognition.onresult = (event) => {
+                    let transcript = '';
                     for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript + ' ';
-                        } else {
-                            interimTranscript += transcript;
-                        }
+                        transcript += event.results[i][0].transcript;
                     }
-
-                    state.recognizedText = finalTranscript;
-                    document.getElementById('recognized-text').textContent = finalTranscript + interimTranscript;
-                    
-                    // 检查文本长度
-                    if (finalTranscript.trim().length > 10) {
-                        document.getElementById('submit-btn').disabled = false;
-                    }
+                    document.getElementById('speechToText').value = transcript;
+                    checkStep3Complete();
                 };
 
-                recognition.onerror = (event) => {
+                state.recognition.onerror = (event) => {
                     console.error('语音识别错误:', event.error);
-                    document.getElementById('recording-status').textContent = `识别错误: ${event.error}`;
+                    showToast('语音识别失败，请重试');
                     stopRecording();
                 };
 
-                recognition.onend = () => {
-                    if (isRecording) {
-                        // 如果还在录音状态，重新开始（实现连续识别）
-                        try {
-                            recognition.start();
-                        } catch (e) {
-                            console.error('重新开始识别失败:', e);
-                            stopRecording();
-                        }
-                    }
+                state.recognition.onend = () => {
+                    stopRecording();
                 };
             } else {
-                alert('您的浏览器不支持语音识别功能。请使用 Chrome 或 Edge 浏览器。');
+                showToast('您的浏览器不支持语音识别功能');
             }
         }
 
         function toggleRecording() {
-            if (!recognition) {
+            if (!state.recognition) {
                 initSpeechRecognition();
             }
 
-            if (isRecording) {
+            if (state.isRecording) {
                 stopRecording();
             } else {
                 startRecording();
@@ -722,96 +921,81 @@
         }
 
         function startRecording() {
-            if (recognition) {
-                try {
-                    recognition.start();
-                    isRecording = true;
-                    document.getElementById('record-btn').classList.remove('from-red-500', 'to-red-600');
-                    document.getElementById('record-btn').classList.add('from-red-600', 'to-red-700', 'pulse-ring');
-                    document.getElementById('record-btn-text').textContent = '录音中...';
-                    document.getElementById('recording-status').textContent = '正在录音，请说话...';
-                } catch (e) {
-                    console.error('开始录音失败:', e);
-                }
+            if (!state.recognition) {
+                showToast('语音识别未初始化');
+                return;
             }
+
+            state.isRecording = true;
+            const btn = document.getElementById('recordBtn');
+            btn.classList.add('recording-pulse');
+            btn.innerHTML = '<i class="fas fa-stop mr-2"></i>停止录音';
+            document.getElementById('recordingStatus').classList.remove('hidden');
+            
+            state.recognition.start();
         }
 
         function stopRecording() {
-            if (recognition && isRecording) {
-                recognition.stop();
-                isRecording = false;
-                document.getElementById('record-btn').classList.remove('from-red-600', 'to-red-700', 'pulse-ring');
-                document.getElementById('record-btn').classList.add('from-red-500', 'to-red-600');
-                document.getElementById('record-btn-text').textContent = '开始录音';
-                document.getElementById('recording-status').textContent = '录音已停止';
+            state.isRecording = false;
+            const btn = document.getElementById('recordBtn');
+            btn.classList.remove('recording-pulse');
+            btn.innerHTML = '<i class="fas fa-microphone mr-2"></i>开始录音';
+            document.getElementById('recordingStatus').classList.add('hidden');
+            
+            if (state.recognition) {
+                state.recognition.stop();
             }
         }
 
-        function resetRecording() {
-            stopRecording();
-            state.recognizedText = '';
-            document.getElementById('recognized-text').textContent = '录音文本将显示在这里...';
-            document.getElementById('submit-btn').disabled = true;
+        function checkStep3Complete() {
+            const speechText = document.getElementById('speechToText').value.trim();
+            const manualText = document.getElementById('manualInput').value.trim();
+            state.userAnswer = manualText || speechText;
+            document.getElementById('submitEvaluationBtn').disabled = !state.userAnswer;
         }
 
-        // Step 3 -> Step 2 (返回)
-        function goToStep2FromStep3() {
-            stopRecording();
-            showStep(2);
-        }
+        // 提交测评
+        async function submitEvaluation() {
+            const btn = document.getElementById('submitEvaluationBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 测评中...';
 
-        // Step 3 -> Step 4
-        function goToStep4() {
-            const text = state.recognizedText.trim();
-            if (text.length < 10) {
-                alert('录音文本太短，请至少录制10个字');
-                return;
-            }
-
-            stopRecording();
-            state.trainingData.answer = text;
-            showStep(4);
-            generateFeedback();
-        }
-
-        // Step 4: 生成反馈
-        async function generateFeedback() {
-            const apiKey = localStorage.getItem('deepseek_key');
+            const apiKey = localStorage.getItem('deepseek_api_key');
             if (!apiKey) {
-                showFeedbackError('请先设置 API Key');
+                showToast('请先在设置中配置 API Key');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>提交测评';
                 return;
             }
-
-            // 显示加载状态
-            document.getElementById('feedback-loading').classList.remove('hidden');
-            document.getElementById('feedback-content').classList.add('hidden');
-            document.getElementById('feedback-error').classList.add('hidden');
-
-            const prompt = `你是一位专业的逻辑口才训练导师。请对以下练习进行多维度评分和详细点评。
-
-题目：${state.trainingData.topic}
-选择的策略：${state.trainingData.strategy}
-学员回答：${state.trainingData.answer}
-
-请从以下维度进行评分（满分100分）：
-1. 逻辑闭环（30分）：论证是否完整，逻辑链条是否清晰
-2. 策略执行度（30分）：是否有效运用了选择的策略
-3. 表达流畅度（20分）：语言是否流畅自然
-4. 反应速度（20分）：回答是否及时有效
-
-请以JSON格式返回，格式如下：
-{
-  "scores": {
-    "logic": 25,
-    "strategy": 28,
-    "fluency": 18,
-    "speed": 17
-  },
-  "total": 88,
-  "feedback": "详细点评内容（Markdown格式），包括：\n1. 优点分析\n2. 逻辑漏洞指出\n3. 优化建议\n4. 给出优化后的金句示例"
-}`;
 
             try {
+                const prompt = `请对以下辩论练习进行专业测评，返回JSON格式数据：
+
+题目：${state.topic}
+策略：${state.selectedStrategy}
+回答：${state.userAnswer}
+
+请从以下5个维度评分（0-100分）：
+1. 逻辑闭环：论证是否完整，逻辑是否严密
+2. 策略执行：是否有效运用了所选策略
+3. 表达流畅：语言表达是否流畅自然
+4. 反应速度：回答是否及时到位
+5. 词汇丰富：用词是否丰富准确
+
+请返回JSON格式：
+{
+  "scores": {
+    "逻辑闭环": 85,
+    "策略执行": 80,
+    "表达流畅": 75,
+    "反应速度": 70,
+    "词汇丰富": 80
+  },
+  "totalScore": 78,
+  "feedback": "毒舌点评内容（Markdown格式）",
+  "suggestion": "优化建议（Markdown格式）"
+}`;
+
                 const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -828,219 +1012,210 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 请求失败: ${response.status}`);
+                    throw new Error('API 请求失败');
                 }
 
                 const data = await response.json();
                 const content = data.choices[0].message.content;
                 
-                // 解析 JSON
+                // 解析JSON
                 let jsonStr = content.trim();
                 if (jsonStr.includes('```')) {
-                    jsonStr = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/)?.[1] || jsonStr;
+                    const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                    if (match) {
+                        jsonStr = match[1];
+                    }
                 }
-                const feedbackData = JSON.parse(jsonStr);
-
-                // 显示反馈
-                displayFeedback(feedbackData);
+                
+                state.evaluationResult = JSON.parse(jsonStr);
+                renderEvaluation();
+                goToStep(4);
             } catch (error) {
-                console.error('生成反馈失败:', error);
-                showFeedbackError(`生成反馈失败: ${error.message}`);
+                console.error('测评失败:', error);
+                showToast('测评失败，请检查 API Key 或网络连接');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>提交测评';
             }
         }
 
-        function displayFeedback(feedbackData) {
-            document.getElementById('feedback-loading').classList.add('hidden');
-            document.getElementById('feedback-content').classList.remove('hidden');
+        // 渲染测评结果
+        function renderEvaluation() {
+            const result = state.evaluationResult;
+            
+            // 显示总分
+            document.getElementById('totalScore').textContent = result.totalScore || 0;
 
-            // 显示分数
-            document.getElementById('score-logic').textContent = feedbackData.scores.logic || 0;
-            document.getElementById('score-strategy').textContent = feedbackData.scores.strategy || 0;
-            document.getElementById('score-fluency').textContent = feedbackData.scores.fluency || 0;
-            document.getElementById('score-speed').textContent = feedbackData.scores.speed || 0;
+            // 渲染雷达图
+            renderRadarChart(result.scores);
 
-            // 显示点评（Markdown 渲染）
-            const feedbackText = document.getElementById('feedback-text');
-            if (window.marked) {
-                feedbackText.innerHTML = marked.parse(feedbackData.feedback || '');
-            } else {
-                feedbackText.textContent = feedbackData.feedback || '';
+            // 渲染Markdown内容
+            const feedbackContent = document.getElementById('feedbackContent');
+            const markdown = `## 毒舌点评\n\n${result.feedback || ''}\n\n## 优化建议\n\n${result.suggestion || ''}`;
+            feedbackContent.innerHTML = marked.parse(markdown);
+        }
+
+        // 渲染雷达图
+        function renderRadarChart(scores) {
+            // 销毁旧图表
+            if (state.radarChart) {
+                state.radarChart.destroy();
             }
 
-            // 保存到训练数据
-            state.trainingData.scores = feedbackData.scores;
-            state.trainingData.feedback = feedbackData.feedback;
-            state.trainingData.total = feedbackData.total || 0;
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            const labels = Object.keys(scores || {});
+            const values = Object.values(scores || {});
+
+            state.radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '得分',
+                        data: values,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderColor: '#10b981',
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#10b981',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                color: '#ffffff',
+                                backdropColor: 'transparent'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            pointLabels: {
+                                color: '#ffffff',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
         }
 
-        function showFeedbackError(message) {
-            document.getElementById('feedback-loading').classList.add('hidden');
-            document.getElementById('feedback-content').classList.add('hidden');
-            document.getElementById('feedback-error').classList.remove('hidden');
-            document.getElementById('feedback-error-text').textContent = message;
-        }
+        // 复制报告
+        function copyReport() {
+            const result = state.evaluationResult;
+            const report = `题目：${state.topic}
 
-        // Step 4 -> Step 3 (返回)
-        function goToStep3FromStep4() {
-            showStep(3);
+策略：${state.selectedStrategy}
+
+回答：${state.userAnswer}
+
+总分：${result.totalScore}
+
+各维度得分：
+${Object.entries(result.scores || {}).map(([k, v]) => `${k}: ${v}分`).join('\n')}
+
+毒舌点评：
+${result.feedback || ''}
+
+优化建议：
+${result.suggestion || ''}`;
+
+            navigator.clipboard.writeText(report).then(() => {
+                showToast('报告已复制到剪贴板');
+            }).catch(() => {
+                showToast('复制失败，请手动复制');
+            });
         }
 
         // 保存并返回首页
         function saveAndReturn() {
-            // 保存到历史记录
-            const history = JSON.parse(localStorage.getItem('history_list') || '[]');
-            const record = {
-                id: Date.now(),
-                timestamp: new Date().toLocaleString('zh-CN'),
-                topic: state.trainingData.topic,
-                strategy: state.trainingData.strategy,
-                answer: state.trainingData.answer,
-                scores: state.trainingData.scores,
-                total: state.trainingData.total,
-                feedback: state.trainingData.feedback
-            };
-            history.unshift(record);
-            localStorage.setItem('history_list', JSON.stringify(history));
+            const result = state.evaluationResult;
+            const history = JSON.parse(localStorage.getItem('training_history') || '[]');
+            
+            history.unshift({
+                date: new Date().toISOString(),
+                topic: state.topic,
+                strategy: state.selectedStrategy,
+                answer: state.userAnswer,
+                score: result.totalScore,
+                scores: result.scores,
+                feedback: result.feedback,
+                suggestion: result.suggestion
+            });
 
-            // 更新今日统计
-            updateTodayStats();
-
-            // 返回首页
-            showView('home');
+            localStorage.setItem('training_history', JSON.stringify(history));
+            showToast('已保存到历史记录');
+            loadUserRank();
+            resetTrainingFlow();
+            switchView('home');
         }
 
         // 再练一题
-        function trainAgain() {
-            // 先保存当前记录
-            saveAndReturn();
-            // 然后重新开始训练
-            setTimeout(() => {
-                startTraining();
-            }, 100);
+        function practiceAgain() {
+            resetTrainingFlow();
         }
 
-        // API Key 管理
-        function loadApiKey() {
-            const apiKey = localStorage.getItem('deepseek_key');
-            if (apiKey) {
-                document.getElementById('api-key-input').value = apiKey;
-            }
-        }
-
-        function saveApiKey() {
-            const apiKey = document.getElementById('api-key-input').value.trim();
-            if (!apiKey) {
-                showSettingsMessage('API Key 不能为空', 'error');
-                return;
-            }
-            localStorage.setItem('deepseek_key', apiKey);
-            showSettingsMessage('API Key 已保存', 'success');
-        }
-
-        function showSettingsMessage(message, type) {
-            const messageDiv = document.getElementById('settings-message');
-            messageDiv.className = `mt-4 p-4 rounded-lg ${
-                type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-500/50' : 'bg-emerald-900/30 text-emerald-300 border border-emerald-500/50'
-            }`;
-            messageDiv.textContent = message;
-            setTimeout(() => {
-                messageDiv.textContent = '';
-                messageDiv.className = '';
-            }, 3000);
-        }
-
-        // 历史记录
+        // 加载历史记录
         function loadHistory() {
-            const history = JSON.parse(localStorage.getItem('history_list') || '[]');
-            const historyList = document.getElementById('history-list');
-            
+            const history = JSON.parse(localStorage.getItem('training_history') || '[]');
+            const container = document.getElementById('historyList');
+            const empty = document.getElementById('emptyHistory');
+
             if (history.length === 0) {
-                historyList.innerHTML = '<div class="text-center text-gray-400 py-12">暂无历史记录</div>';
+                container.innerHTML = '';
+                empty.classList.remove('hidden');
                 return;
             }
 
-            historyList.innerHTML = history.map(record => `
-                <div class="bg-slate-800/50 rounded-xl p-6 border border-amber-500/20">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-amber-400 mb-2">${record.topic}</h3>
-                            <p class="text-sm text-gray-400">${record.timestamp}</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-bold text-emerald-400">${record.total || 0}</div>
-                            <div class="text-xs text-gray-400">总分</div>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <p class="text-sm text-gray-300 mb-1"><span class="text-gray-500">策略：</span>${record.strategy}</p>
-                        <p class="text-sm text-gray-300"><span class="text-gray-500">回答：</span>${record.answer.substring(0, 100)}${record.answer.length > 100 ? '...' : ''}</p>
-                    </div>
-                    <button 
-                        onclick="toggleHistoryDetail(${record.id})" 
-                        class="text-amber-400 hover:text-amber-300 text-sm"
-                    >
-                        查看详情
-                    </button>
-                    <div id="detail-${record.id}" class="hidden mt-4 pt-4 border-t border-slate-700">
-                        <div class="grid grid-cols-4 gap-4 mb-4">
-                            <div class="text-center">
-                                <div class="text-lg font-semibold text-emerald-400">${record.scores?.logic || 0}</div>
-                                <div class="text-xs text-gray-400">逻辑闭环</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-semibold text-emerald-400">${record.scores?.strategy || 0}</div>
-                                <div class="text-xs text-gray-400">策略执行</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-semibold text-emerald-400">${record.scores?.fluency || 0}</div>
-                                <div class="text-xs text-gray-400">表达流畅</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-semibold text-emerald-400">${record.scores?.speed || 0}</div>
-                                <div class="text-xs text-gray-400">反应速度</div>
-                            </div>
-                        </div>
-                        <div class="bg-slate-900/50 rounded-lg p-4">
-                            <h4 class="text-sm font-semibold text-amber-400 mb-2">详细点评</h4>
-                            <div class="text-sm text-gray-300 prose prose-invert max-w-none">${window.marked ? marked.parse(record.feedback || '') : record.feedback || ''}</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
+            empty.classList.add('hidden');
+            container.innerHTML = '';
 
-        function toggleHistoryDetail(id) {
-            const detail = document.getElementById(`detail-${id}`);
-            if (detail) {
-                detail.classList.toggle('hidden');
-            }
-        }
+            history.forEach((item, index) => {
+                const date = new Date(item.date);
+                const dateStr = date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                const score = item.score || 0;
+                const scoreColor = score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400';
 
-        // 更新今日统计
-        function updateTodayStats() {
-            const history = JSON.parse(localStorage.getItem('history_list') || '[]');
-            const today = new Date().toLocaleDateString('zh-CN');
-            
-            const todayRecords = history.filter(record => {
-                const recordDate = new Date(record.timestamp).toLocaleDateString('zh-CN');
-                return recordDate === today;
+                const card = document.createElement('div');
+                card.className = 'card cursor-pointer history-card';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-sm text-gray-400">${dateStr}</div>
+                        <div class="text-xl font-bold ${scoreColor}">${score} 分</div>
+                    </div>
+                    <div class="text-lg font-medium mb-2">${item.topic}</div>
+                    <div class="text-sm text-gray-400 mb-2">策略：${item.strategy}</div>
+                    <div class="text-sm text-gray-500 line-clamp-2">${item.answer}</div>
+                    <div class="mt-4 hidden detail-content">
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <div class="markdown-content text-sm">${marked.parse(item.feedback || '')}</div>
+                            <div class="markdown-content text-sm mt-4">${marked.parse(item.suggestion || '')}</div>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    const detail = card.querySelector('.detail-content');
+                    detail.classList.toggle('hidden');
+                });
+
+                container.appendChild(card);
             });
-
-            document.getElementById('today-count').textContent = todayRecords.length;
-            
-            // 计算平均分
-            if (todayRecords.length > 0) {
-                const totalScore = todayRecords.reduce((sum, r) => sum + (r.total || 0), 0);
-                const avgScore = Math.round(totalScore / todayRecords.length);
-                document.getElementById('avg-score').textContent = avgScore;
-            } else {
-                document.getElementById('avg-score').textContent = '-';
-            }
-
-            // 今日时长（简单估算，每次练习约5分钟）
-            document.getElementById('today-time').textContent = todayRecords.length * 5;
         }
-
     </script>
 </body>
 </html>
